@@ -26,6 +26,8 @@ use Illuminate\Support\Str;
 //     return $request->user();
 // });
 
+
+
 // PROTECTED routes
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -39,19 +41,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/user/change-password', [AuthController::class, 'changePassword']);
 });
 
-// PUBLIC routes
-Route::post('/register', [AuthController::class, 'register']);
-
-
 // TEST RESTFUL Commands
 Route::resource('/user', UserController::class);
 
-
-
-
-
-
-
+// PUBLIC routes
+Route::post('/register', [AuthController::class, 'register']);
+Route::get('/users/public', [UserController::class, 'publicIndex']); //Seatch bar user
+Route::get('/user/slug/{slug}', [UserController::class, 'showBySlug']); //Profile user public
 
 
 
@@ -70,15 +66,6 @@ Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
     }
 
 })->middleware('signed')->name('verification.verify');
-
-
-
-
-
-
-
-
-
 
 
 

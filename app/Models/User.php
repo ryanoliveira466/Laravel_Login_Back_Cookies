@@ -10,6 +10,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Notifications\ResetPasswordNotification;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -50,4 +51,24 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $this->notify(new ResetPasswordNotification($token));
     }
+
+    protected static function booted()
+{
+    static::creating(function ($user) {
+        do {
+            $slug = Str::slug($user->name) . '-' . Str::random(6);
+            $user->slug = $slug; 
+        } while (\App\Models\User::where('slug', $slug)->exists());
+    });
+
+    static::updating(function ($user) {
+        if ($user->isDirty('name')) {
+            do {
+                $slug = Str::slug($user->name) . '-' . Str::random(6);
+                $user->slug = $slug; 
+            } while (\App\Models\User::where('slug', $slug)->exists());
+        }
+        
+    });
+}
 }
