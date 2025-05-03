@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PostController;
 use App\Http\Controllers\UserController;
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
@@ -26,6 +27,8 @@ use Illuminate\Support\Str;
 //     return $request->user();
 // });
 
+
+
 // PROTECTED routes
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -37,20 +40,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/my', [UserController::class, 'my']);
     Route::post('/user/update', [AuthController::class, 'updateUser']);
     Route::post('/user/change-password', [AuthController::class, 'changePassword']);
+    Route::post('/user/post-content', [AuthController::class, 'postContent']);
+    Route::get('/user/myProjects', [PostController::class, 'myProjects']);
 });
-
-// PUBLIC routes
-Route::post('/register', [AuthController::class, 'register']);
-
 
 // TEST RESTFUL Commands
 Route::resource('/user', UserController::class);
 
+// PUBLIC routes
+Route::post('/register', [AuthController::class, 'register']);
+Route::get('/users/public', [UserController::class, 'publicIndex']); //Search bar user
+Route::get('/user/slug/{slug}', [UserController::class, 'showBySlug']); //Profile user public link for each
 
-
-
-
-
+Route::get('/projects/user/{slug}', [PostController::class, 'userProjects']); //Projects of the user public on member page
+Route::get('/project/slug/{userSlug}/{projectSlug}', [PostController::class, 'showBySlug']); //Projects user public link for each
 
 
 
@@ -70,15 +73,6 @@ Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
     }
 
 })->middleware('signed')->name('verification.verify');
-
-
-
-
-
-
-
-
-
 
 
 

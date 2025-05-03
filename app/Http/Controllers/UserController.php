@@ -12,14 +12,24 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::all();
 
-        return response()->json([
-            'success' => true,
-            'msg' => 'Users listed successfully',
-            'usersCount' => $users->count(),
-            'users' => $users
-        ],200);
+        try {
+            $users = User::all();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Users listed successfully',
+                'usersCount' => $users->count(),
+                'users' => $users
+            ],200);
+        } catch (\Exception $error) {
+            return response()->json([
+                'success' => false,
+                'message' => "Failed to delete user",
+                'error' => $error->getMessage(),
+            ],500);
+        }
+       
     }
 
     /**
@@ -56,14 +66,14 @@ class UserController extends Controller
         } catch (\Exception $error) {
             return response()->json([
                 'success' => false,
-                'msg' => 'Failed to register user',
+                'message' => 'Failed to register user',
                 'error' => $error->getMessage(),
-            ],201);
+            ],500);
         }
 
         return response()->json([
             'success' => true,
-            'msg' => 'User registered successfully',
+            'message' => 'User registered successfully',
             'user' => $user,
         ],201);
     }
@@ -111,16 +121,16 @@ class UserController extends Controller
         } catch (\Exception $error) {
             return response()->json([
                 'success' => false,
-                'msg' => 'Failed to update user',
+                'message' => 'Failed to update user',
                 'error' => $error->getMessage(),
-            ],201);
+            ],500);
         }
 
         return response()->json([
             'success' => true,
-            'msg' => 'User updated successfully',
+            'message' => 'User updated successfully',
             'user' => $user,
-        ],201);
+        ],200);
     }
 
     /**
@@ -133,13 +143,13 @@ class UserController extends Controller
             $user->delete();
             return response()->json([
                 'success' => true,
-                'msg' => "User $user->name deleted successfully",
+                'message' => "User $user->name deleted successfully",
             ],200);
 
         } catch (\Exception $error) {
             return response()->json([
                 'success' => false,
-                'msg' => "Failed to delete user",
+                'message' => "Failed to delete user",
                 'error' => $error->getMessage(),
             ],500);
     }
@@ -154,6 +164,51 @@ class UserController extends Controller
         'user' => $request->user()
     ]);
 }
+
+
+public function publicIndex()
+{
+
+    try {
+        $users = User::select('name','email','slug')->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Users listed successfully',
+            'usersCount' => $users->count(),
+            'users' => $users
+        ],200);
+    } catch (\Exception $error) {
+        return response()->json([
+            'success' => false,
+            'message' => "Failed to delete user",
+            'error' => $error->getMessage(),
+        ],500);
+    }
+   
+}
+
+
+
+public function showBySlug($slug)
+{
+    try {
+        $user = User::select('name', 'email')->where('slug', $slug)->firstOrFail();
+        return response()->json([
+            'success' => true,
+            'message' => 'User listed successfully',
+            'userCount' => $user->count(),
+            'user' => $user
+        ],200);
+    } catch (\Exception $error) {
+        return response()->json([
+            'success' => false,
+            'message' => "Failed to select user by slug",
+            'error' => $error->getMessage(),
+        ],500);
+    }
+}
+
 
 
  
