@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers;
 
-
+use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
-use Dotenv\Exception\ValidationException;
 
-use function Laravel\Prompts\password;
 
 class AuthController extends Controller
 {
@@ -69,8 +67,6 @@ class AuthController extends Controller
                 'message' => 'Success while logging in',
                 'user' => $user,
             ], 200);
-
-     
         } catch (\Exception $error) {
             return response()->json([
                 'success' => false,
@@ -291,6 +287,106 @@ class AuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error while changing password',
+                'error' => $error->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
+    public function postContent(Request $request)
+    {
+
+
+        //Trim is auto for email and name
+
+        try {
+            $request->validate(
+                [
+                    'name' => 'required',
+                    'description' => 'required',
+                    'javascript' => 'required',
+                    'css' => 'required',
+                    'html' => 'required'
+                ],
+                [
+                    'name.required' => 'The name field is required',
+                    'description.required' => 'The description field is required',
+                    'javascript.required' => 'The javascript field is required',
+                    'css.required' => 'The css field is required',
+                    'html.required' => 'The html field is required'
+                ]
+            );
+
+            $user = $request->user();
+            $post = $user->posts()->create([
+                'name' => $request->name,
+                'description' => $request->description,
+                'javascript' => $request->javascript,
+                'css' => $request->css,
+                'html' => $request->html,
+            ]);
+
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Success while posting',
+                'post' => $post,
+            ], 201);
+        } catch (\Exception $error) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error while posting',
+                'error' => $error->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
+    public function updateContent(Request $request, $projectSlug)
+    {
+
+        //Trim is auto for email and name
+
+        try {
+            $request->validate(
+                [
+                    'name' => 'required',
+                    'description' => 'required',
+                    'javascript' => 'required',
+                    'css' => 'required',
+                    'html' => 'required'
+                ],
+                [
+                    'name.required' => 'The name field is required',
+                    'description.required' => 'The description field is required',
+                    'javascript.required' => 'The javascript field is required',
+                    'css.required' => 'The css field is required',
+                    'html.required' => 'The html field is required'
+                ]
+            );
+
+            $user = $request->user();
+            $post = Post::where('user_id', $user->id)->where('slug', $projectSlug)->firstOrFail();
+
+            $post->update([
+                'name' => $request->name,
+                'description' => $request->description,
+                'javascript' => $request->javascript,
+                'css' => $request->css,
+                'html' => $request->html,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Success while updating',
+                'post' => $post,
+            ], 201);
+        } catch (\Exception $error) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error while updating',
                 'error' => $error->getMessage(),
             ], 500);
         }
