@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers;
 
-
+use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
-use Dotenv\Exception\ValidationException;
-
-use function Laravel\Prompts\password;
+use Illuminate\Support\Facades\Storage;
 
 class AuthController extends Controller
 {
@@ -69,8 +67,6 @@ class AuthController extends Controller
                 'message' => 'Success while logging in',
                 'user' => $user,
             ], 200);
-
-     
         } catch (\Exception $error) {
             return response()->json([
                 'success' => false,
@@ -190,6 +186,25 @@ class AuthController extends Controller
             ], 400);
         }
 
+        if (preg_match('/^data:image\/(\w+);base64,/', $request->photo, $type)) {
+            // Delete old photo if exists
+            if ($request->user()->photo && Storage::disk('public')->exists($request->user()->photo)) {
+                Storage::disk('public')->delete($request->user()->photo);
+            }
+
+            // Decode and store new photo
+            $data = substr($request->photo, strpos($request->photo, ',') + 1);
+            $data = base64_decode($data);
+
+            $extension = strtolower($type[1]); // png, jpeg, etc.
+            $filename = uniqid() . '.' . $extension;
+            Storage::disk('public')->put("photos/{$filename}", $data);
+
+            // ⬅️ This line is critical: override photo with filename
+            $request->merge(['photo' => "photos/{$filename}"]);
+        }
+
+
         $user = $request->user();
 
         try {
@@ -197,12 +212,14 @@ class AuthController extends Controller
                 [
                     'name' => 'required',
                     'email' => 'required|email|unique:users,email,' . $user->id,
+                    'photo' => 'required',
                 ],
                 [
                     'name.required' => 'The name field is required',
                     'email.required' => 'The email field is required',
                     'email.email' => 'The email must be a valid email address',
                     'email.unique' => 'The email is already registered',
+                    'photo.required' => 'The photo field is required',
                 ]
             );
 
@@ -214,7 +231,7 @@ class AuthController extends Controller
                 $user->sendEmailVerificationNotification();
             }
 
-            $user->update($request->only('name', 'email'));
+            $user->update($request->only('name', 'email', 'photo'));
 
             return response()->json([
                 'message' => 'User updated successfully',
@@ -291,6 +308,143 @@ class AuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error while changing password',
+                'error' => $error->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
+    public function postContent(Request $request)
+    {
+
+
+        //Trim is auto for email and name
+
+        if (preg_match('/^data:image\/(\w+);base64,/', $request->photo, $type)) {
+            // Decode and store new photo
+            $data = substr($request->photo, strpos($request->photo, ',') + 1);
+            $data = base64_decode($data);
+
+            $extension = strtolower($type[1]); // png, jpeg, etc.
+            $filename = uniqid() . '.' . $extension;
+            Storage::disk('public')->put("photos/{$filename}", $data);
+
+            // ⬅️ This line is critical: override photo with filename
+            $request->merge(['photo' => "photos/{$filename}"]);
+        }
+
+        try {
+            $request->validate(
+                [
+                    'name' => 'required',
+                    'description' => 'required',
+                    'javascript' => 'required',
+                    'css' => 'required',
+                    'html' => 'required',
+                    'photo' => 'required'
+                ],
+                [
+                    'name.required' => 'The name field is required',
+                    'description.required' => 'The description field is required',
+                    'javascript.required' => 'The javascript field is required',
+                    'css.required' => 'The css field is required',
+                    'html.required' => 'The html field is required',
+                    'photo.required' => 'The photo filed is required'
+                ]
+            );
+
+            $user = $request->user();
+            $post = $user->posts()->create([
+                'name' => $request->name,
+                'description' => $request->description,
+                'javascript' => $request->javascript,
+                'css' => $request->css,
+                'html' => $request->html,
+                'photo' => $request->photo
+            ]);
+
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Success while posting',
+                'post' => $post,
+            ], 201);
+        } catch (\Exception $error) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error while posting',
+                'error' => $error->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
+    public function updateContent(Request $request, $projectSlug)
+    {
+
+        //Trim is auto for email and name
+
+        if (preg_match('/^data:image\/(\w+);base64,/', $request->photo, $type)) {
+            // // Delete old photo if exists
+            // if ($post->photo && Storage::disk('public')->exists($post->photo)) {
+            //     Storage::disk('public')->delete($post);
+            // }
+
+            // Decode and store new photo
+            $data = substr($request->photo, strpos($request->photo, ',') + 1);
+            $data = base64_decode($data);
+
+            $extension = strtolower($type[1]); // png, jpeg, etc.
+            $filename = uniqid() . '.' . $extension;
+            Storage::disk('public')->put("photos/{$filename}", $data);
+
+            // ⬅️ This line is critical: override photo with filename
+            $request->merge(['photo' => "photos/{$filename}"]);
+        }
+
+        try {
+            $request->validate(
+                [
+                    'name' => 'required',
+                    'description' => 'required',
+                    'javascript' => 'required',
+                    'css' => 'required',
+                    'html' => 'required',
+                    'photo' => 'required'
+                ],
+                [
+                    'name.required' => 'The name field is required',
+                    'description.required' => 'The description field is required',
+                    'javascript.required' => 'The javascript field is required',
+                    'css.required' => 'The css field is required',
+                    'html.required' => 'The html field is required',
+                    'photo.required' => 'The photo filed is required'
+                ]
+            );
+
+            $user = $request->user();
+            $post = Post::where('user_id', $user->id)->where('slug', $projectSlug)->firstOrFail();
+
+            $post->update([
+                'name' => $request->name,
+                'description' => $request->description,
+                'javascript' => $request->javascript,
+                'css' => $request->css,
+                'html' => $request->html,
+                'photo' => $request->photo
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Success while updating',
+                'post' => $post,
+            ], 201);
+        } catch (\Exception $error) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error while updating',
                 'error' => $error->getMessage(),
             ], 500);
         }
