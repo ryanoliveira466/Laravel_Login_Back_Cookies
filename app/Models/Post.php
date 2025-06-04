@@ -2,22 +2,17 @@
 
 namespace App\Models;
 
-
-
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
-use App\Notifications\ResetPasswordNotification;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
-use App\Models\Post;
+use App\Models\User;
 
 
-
-class User extends Authenticatable implements MustVerifyEmail
+class Post extends Model
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasFactory;
+
+    protected $table = 'components_user'; //table associed with model
 
     /**
      * The attributes that are mass assignable.
@@ -26,39 +21,19 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $fillable = [
         'name',
-        'email',
-        'password',
+        'description',
+        'javascript',
+        'css',
+        'html',
         'photo',
+        'tags'
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-    ];
-
-
-    public function sendPasswordResetNotification($token)
-    {
-        $this->notify(new ResetPasswordNotification($token));
-    }
 
     protected static function booted()
     {
         static::creating(function ($user) {
+
             do {
                 $length = rand(1, 10);
                 $slug = '';
@@ -67,10 +42,11 @@ class User extends Authenticatable implements MustVerifyEmail
                 }
                 $user->slug = $slug;
             } while (\App\Models\Post::where('slug', $slug)->exists());
+
             // do {
             //     $slug = Str::slug($user->name) . '-' . Str::random(6);
             //     $user->slug = $slug; 
-            // } while (\App\Models\User::where('slug', $slug)->exists());
+            // } while (\App\Models\Post::where('slug', $slug)->exists());
         });
 
         // static::updating(function ($user) {
@@ -78,24 +54,23 @@ class User extends Authenticatable implements MustVerifyEmail
         //         do {
         //             $slug = Str::slug($user->name) . '-' . Str::random(6);
         //             $user->slug = $slug; 
-        //         } while (\App\Models\User::where('slug', $slug)->exists());
+        //         } while (\App\Models\Post::where('slug', $slug)->exists());
         //     }
 
         // });
     }
 
 
-
     //Whenever we have a pivot table, we need to relate one´s relationship(id) to another one´s relationship(id)
 
-    public function posts()
+    public function user()
     {
-        return $this->hasMany(Post::class);
+        return $this->belongsTo(User::class); //Foreign key
     }
 
-    public function likedPosts()
-{
-    return $this->belongsToMany(Post::class, 'liked_post');
-}
 
+    public function likedByUsers()
+    {
+        return $this->belongsToMany(User::class, 'liked_post');
+    }
 }
