@@ -10,6 +10,10 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Notifications\ResetPasswordNotification;
+use Illuminate\Support\Str;
+use App\Models\Post;
+
+
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -24,6 +28,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
+        'photo',
     ];
 
     /**
@@ -50,4 +55,68 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $this->notify(new ResetPasswordNotification($token));
     }
+
+    protected static function booted()
+    {
+        static::creating(function ($user) {
+            do {
+                $length = rand(1, 10);
+                $slug = '';
+                for ($i = 0; $i < $length; $i++) {
+                    $slug .= rand(0, 9);
+                }
+                $user->slug = $slug;
+            } while (\App\Models\Post::where('slug', $slug)->exists());
+            // do {
+            //     $slug = Str::slug($user->name) . '-' . Str::random(6);
+            //     $user->slug = $slug; 
+            // } while (\App\Models\User::where('slug', $slug)->exists());
+        });
+
+        // static::updating(function ($user) {
+        //     if ($user->isDirty('name')) {
+        //         do {
+        //             $slug = Str::slug($user->name) . '-' . Str::random(6);
+        //             $user->slug = $slug; 
+        //         } while (\App\Models\User::where('slug', $slug)->exists());
+        //     }
+
+        // });
+    }
+
+
+
+    //Whenever we have a pivot table, we need to relate one´s relationship(id) to another one´s relationship(id)
+    //Not obligated, just helpers
+
+    public function posts()
+    {
+        return $this->hasMany(Post::class);
+    }
+
+    public function likedPosts()
+{
+    return $this->belongsToMany(Post::class, 'liked_post');
+}
+
+public function viewedPosts()
+{
+    return $this->belongsToMany(Post::class, 'views');
+}
+
+//Im not using, but could be possible
+// Users this user is following
+public function following()
+{
+    return $this->belongsToMany(User::class);
+}
+
+// Users following this user
+public function followers()
+{
+    return $this->belongsToMany(User::class);
+}
+
+
+
 }
