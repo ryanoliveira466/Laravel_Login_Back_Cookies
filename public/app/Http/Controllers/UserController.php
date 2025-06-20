@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
@@ -188,70 +187,12 @@ class UserController extends Controller
         }
     }
 
-    public function publicIndexQuery(Request $request)
-    {
-
-        $query = trim($request->input('query', ''));
-
-        // 🔒 If both query and tags are empty, return empty result
-        if ($query === '') {
-            return response()->json([
-                'success' => true,
-                'message' => 'No search criteria provided',
-                'usersCount' => 0,
-                'users' => []
-            ], 200);
-        }
-
-        try {
-            $users = User::select('name', 'email', 'slug', 'photo')
-                ->where('name', 'like', '%' . $query . '%')
-                ->orWhere('email', 'like', '%' . $query . '%')
-                ->get();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Users listed successfully',
-                'usersCount' => $users->count(),
-                'users' => $users
-            ], 200);
-        } catch (\Exception $error) {
-            return response()->json([
-                'success' => false,
-                'message' => "Failed to delete user",
-                'error' => $error->getMessage(),
-            ], 500);
-        }
-    }
 
 
-
-    public function showBySlug(Request $request, $slug)
+    public function showBySlug($slug)
     {
         try {
-            $userAuth = $request->user();
-            $user = User::select('id','name', 'email', 'photo')->where('slug', $slug)->firstOrFail();
-            $isFollowing = null;
-
-
-            if ($userAuth !== null) {
-                if (DB::table('followers')
-                ->where('user_id', $userAuth->id)
-                ->where('followed_user_id', $user->id)
-                ->exists()
-            ) {
-                $isFollowing = true;
-            } else {
-                $isFollowing = false;
-            }
-            }
-            else{
-                $isFollowing = false;
-            }
-
-           
-            $user->followed = $isFollowing;
-
+            $user = User::select('name', 'email', 'photo')->where('slug', $slug)->firstOrFail();
             return response()->json([
                 'success' => true,
                 'message' => 'User listed successfully',

@@ -86,37 +86,9 @@ class User extends Authenticatable implements MustVerifyEmail
 
 
 
-    //Whenever we have a pivot table, we need to relate one´s relationship(id) to another one´s relationship(id)
-    //Not obligated, just helpers
 
     public function posts()
     {
         return $this->hasMany(Post::class);
     }
-
-    public function likedPosts()
-{
-    return $this->belongsToMany(Post::class, 'liked_post');
-}
-
-public function viewedPosts()
-{
-    return $this->belongsToMany(Post::class, 'views');
-}
-
-//Im not using, but could be possible
-// Users this user is following
-public function following()
-{
-    return $this->belongsToMany(User::class);
-}
-
-// Users following this user
-public function followers()
-{
-    return $this->belongsToMany(User::class);
-}
-
-
-
 }
