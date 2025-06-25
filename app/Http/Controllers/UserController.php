@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
@@ -12,14 +13,23 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::all();
 
-        return response()->json([
-            'success' => true,
-            'msg' => 'Users listed successfully',
-            'usersCount' => $users->count(),
-            'users' => $users
-        ],200);
+        try {
+            $users = User::all();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Users listed successfully',
+                'usersCount' => $users->count(),
+                'users' => $users
+            ], 200);
+        } catch (\Exception $error) {
+            return response()->json([
+                'success' => false,
+                'message' => "Failed to delete user",
+                'error' => $error->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -36,36 +46,37 @@ class UserController extends Controller
     public function store(Request $request)
     {
         try {
-            $request->validate([
-                'name' => 'required',
-                'email' => 'required',
-                'password' => 'required',
-            ],
-            [
-                'name.required' => 'Field name is required',
-                'email.required' => 'Field email is required',
-                'password.required' => 'Field password is required',
-            ]);
+            $request->validate(
+                [
+                    'name' => 'required',
+                    'email' => 'required',
+                    'password' => 'required',
+                ],
+                [
+                    'name.required' => 'Field name is required',
+                    'email.required' => 'Field email is required',
+                    'password.required' => 'Field password is required',
+                ]
+            );
 
             $user = User::create([
                 'name' => $request['name'],
                 'email' => $request['email'],
                 'password' => bcrypt($request['password']),
             ]);
-
         } catch (\Exception $error) {
             return response()->json([
                 'success' => false,
-                'msg' => 'Failed to register user',
+                'message' => 'Failed to register user',
                 'error' => $error->getMessage(),
-            ],201);
+            ], 500);
         }
 
         return response()->json([
             'success' => true,
-            'msg' => 'User registered successfully',
+            'message' => 'User registered successfully',
             'user' => $user,
-        ],201);
+        ], 201);
     }
 
     /**
@@ -90,16 +101,18 @@ class UserController extends Controller
     public function update(Request $request, string $id)
     {
         try {
-            $request->validate([
-                'name' => 'required',
-                'email' => 'required',
-                'password' => 'required',
-            ],
-            [
-                'name.required' => 'Field name is required',
-                'email.required' => 'Field email is required',
-                'password.required' => 'Field password is required',
-            ]);
+            $request->validate(
+                [
+                    'name' => 'required',
+                    'email' => 'required',
+                    'password' => 'required',
+                ],
+                [
+                    'name.required' => 'Field name is required',
+                    'email.required' => 'Field email is required',
+                    'password.required' => 'Field password is required',
+                ]
+            );
 
             $user = User::findOrFail($id);
             $user->update([
@@ -107,20 +120,19 @@ class UserController extends Controller
                 'email' => $request['email'],
                 'password' => bcrypt($request['password']),
             ]);
-
         } catch (\Exception $error) {
             return response()->json([
                 'success' => false,
-                'msg' => 'Failed to update user',
+                'message' => 'Failed to update user',
                 'error' => $error->getMessage(),
-            ],201);
+            ], 500);
         }
 
         return response()->json([
             'success' => true,
-            'msg' => 'User updated successfully',
+            'message' => 'User updated successfully',
             'user' => $user,
-        ],201);
+        ], 200);
     }
 
     /**
@@ -133,30 +145,125 @@ class UserController extends Controller
             $user->delete();
             return response()->json([
                 'success' => true,
-                'msg' => "User $user->name deleted successfully",
-            ],200);
-
+                'message' => "User $user->name deleted successfully",
+            ], 200);
         } catch (\Exception $error) {
             return response()->json([
                 'success' => false,
-                'msg' => "Failed to delete user",
+                'message' => "Failed to delete user",
                 'error' => $error->getMessage(),
-            ],500);
-    }
+            ], 500);
+        }
     }
 
 
 
     public function my(Request $request)
-{
-    return response()->json([
-        'success' => true,
-        'user' => $request->user()
-    ]);
-}
+    {
+        return response()->json([
+            'success' => true,
+            'user' => $request->user()
+        ]);
+    }
 
 
- 
-    
+    public function publicIndex()
+    {
 
+        try {
+            $users = User::select('name', 'email', 'slug', 'photo')->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Users listed successfully',
+                'usersCount' => $users->count(),
+                'users' => $users
+            ], 200);
+        } catch (\Exception $error) {
+            return response()->json([
+                'success' => false,
+                'message' => "Failed to delete user",
+                'error' => $error->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function publicIndexQuery(Request $request)
+    {
+
+        $query = trim($request->input('query', ''));
+
+        // 🔒 If both query and tags are empty, return empty result
+        if ($query === '') {
+            return response()->json([
+                'success' => true,
+                'message' => 'No search criteria provided',
+                'usersCount' => 0,
+                'users' => []
+            ], 200);
+        }
+
+        try {
+            $users = User::select('name', 'email', 'slug', 'photo')
+                ->where('name', 'like', '%' . $query . '%')
+                ->orWhere('email', 'like', '%' . $query . '%')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Users listed successfully',
+                'usersCount' => $users->count(),
+                'users' => $users
+            ], 200);
+        } catch (\Exception $error) {
+            return response()->json([
+                'success' => false,
+                'message' => "Failed to delete user",
+                'error' => $error->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
+    public function showBySlug(Request $request, $slug)
+    {
+        try {
+            $userAuth = $request->user();
+            $user = User::select('id','name', 'email', 'photo')->where('slug', $slug)->firstOrFail();
+            $isFollowing = null;
+
+
+            if ($userAuth !== null) {
+                if (DB::table('followers')
+                ->where('user_id', $userAuth->id)
+                ->where('followed_user_id', $user->id)
+                ->exists()
+            ) {
+                $isFollowing = true;
+            } else {
+                $isFollowing = false;
+            }
+            }
+            else{
+                $isFollowing = false;
+            }
+
+           
+            $user->followed = $isFollowing;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User listed successfully',
+                'userCount' => $user->count(),
+                'user' => $user
+            ], 200);
+        } catch (\Exception $error) {
+            return response()->json([
+                'success' => false,
+                'message' => "Failed to select user by slug",
+                'error' => $error->getMessage(),
+            ], 500);
+        }
+    }
 }
